@@ -1,7 +1,7 @@
 # XInput PyBot
-A bot that can perform simple visual pattern matching and play back XInput gamepad macros, split into:
+A bot that can perform simple visual pattern matching and play back gamepad macros, split into:
 - `bot_vision`, which (alongside an assets directory, named 'assets' and placed in the same directory as these scripts) specifies the bot itself, a `BotView` class.
-- `macro_handler`, which contains functionality to record macros from an XInput gamepad, convert them to VJoy-readable states, and play them back on a VJoy device.
+- `macro_handler`, which contains functionality to record macros from an XInput gamepad, convert them to VJoy-readable states, and play these converted macros back on a VJoy device.
 
 And a trivial run script.
 
