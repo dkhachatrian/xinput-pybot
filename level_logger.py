@@ -4,6 +4,7 @@ import re # filtering files by name
 import pickle # import macro_dd
 import numpy as np
 from PIL import Image
+import sys # flush stdout
 
 import csv # log results to file
 
@@ -22,6 +23,9 @@ key_fmt = 'area_{0}' # to be used in logging
 history_file_fmt = '{0}-{1}.bmp' # {0} = key_fmt, {1} = index_num of screenshot
 
 index_finder = re.compile(r'-(\d+)\.')
+marker_indicator = 'marker'
+marker_fmt = 'marker-{0}.png'
+marker_dir = 'markers'
 
 mistake_indicator = 'macro_mistake'
 
@@ -49,7 +53,8 @@ class LevelLogger(bv.BotView):
 		self.next_area_values = self.init_next_area_values() # "Area X" : (what would be the next unseen area's index)
 		self.seen_areas = {}
 		self.templates = self.init_templates()
-		self.mistake_templates = self.init_mistake_templates()
+		# self.mistake_templates = self.init_mistake_templates()
+		self.marker_templates = self.init_verification_dict()
 		self.made_mistake = False
 		super().__init__(window, macros, vjoy_device_num)
 
@@ -59,13 +64,42 @@ class LevelLogger(bv.BotView):
 		self.made_mistake = False
 
 
-	def run_macro(self, macro_label):
-		""" Run specified macro dictionary. """
+	def init_verification_dict(self):
+		""" Returns a dict from marker_fnames (*not* paths!) to cv2 templates."""
+		fpath = os.path.join(self.hist_dir, marker_dir)
+		return {fn.lower():cv2.imread(os.path.join(fpath, fn)) for fn in os.listdir(fpath)}
+		# marker_fpaths = [os.path.join(self.hist_dir, fn) for fn in os.listdir(self.hist_dir) if marker_indicator in fn]
+		# return {fp:cv2.imread(fp) for fp in marker_fpaths}
+
+
+
+	def run_macro(self, macro_label, verify = True):
+		""" Run specified macro dictionary.
+
+		If verify is set to True, will see whether there is a match with the marker associated with the macro label
+		as stored in marker_templates. 
+		It determines which template to use by seeing whether macro_label is in the template's fpath
+		according to the format described in marker_fmt."""
 		super().run_macro(macro_label)
 		# for fun
 		if macro_label == 'advance_rng_seed':
 			self.num_iter += 1
 			print("\nStarting Iteration #{0}...".format(self.num_iter))
+		if verify:
+			key = marker_fmt.format(macro_label)
+			try:
+				self.update_view() # will need to compare with template
+				print("Verifying macro results ... ", end = '')
+				sys.stdout.flush()
+				template = self.marker_templates[key]
+				if not self.is_matching_template(template):
+					self.made_mistake = True
+					return
+				else:
+					print("Looks OK to me!")
+			except KeyError:
+				print("No valid marker template found. Looking for {0}".format(key))
+
 
 
 
@@ -83,9 +117,9 @@ class LevelLogger(bv.BotView):
 		return templates
 
 
-	def init_mistake_templates(self):
-		mistake_files = [os.path.join(self.hist_dir, fn) for fn in os.listdir(self.hist_dir) if mistake_indicator in fn]
-		return {fn: cv2.imread(fn) for fn in mistake_files}
+	# def init_mistake_templates(self):
+	# 	mistake_files = [os.path.join(self.hist_dir, fn) for fn in os.listdir(self.hist_dir) if mistake_indicator in fn]
+	# 	return {fn: cv2.imread(fn) for fn in mistake_files}
 
 	def log_to_csv(self):
 		""" Log what the bot has seen into the filepath indicated by csv_fp. """
@@ -114,6 +148,13 @@ class LevelLogger(bv.BotView):
 			d[key] = len([fn for fn in os.listdir(self.hist_dir) if key in fn])
 		return d
 
+	def is_matching_template(self, template, threshold = None):
+		""" Sees if the maximum value in a cv2.matchTemplate is at least threshold. Default is self.threshold"""
+		if threshold is None:
+			threshold = self.threshold # can't seem to make this default in function definition
+		temp_res = cv2.matchTemplate(self.view, template, cv2.TM_CCOEFF_NORMED)
+		max_val = cv2.minMaxLoc(temp_res)[max_index]
+		return max_val >= threshold
 
 	def evaluate_screen(self, key_str):
 		"""
@@ -123,18 +164,14 @@ class LevelLogger(bv.BotView):
 		it adds the screenshot to the directory with a new index and adds it as a new template.
 		In any case, self.seen_areas is updated with key_str:index_of_image
 		"""
-		# first see if our macro messed up
-		# (a bit ugly having two nearly identical loops...)
-		for (fn, mistake_template) in self.mistake_templates.items():
-			temp_res = cv2.matchTemplate(self.view, mistake_template, cv2.TM_CCOEFF_NORMED)
-			max_val = cv2.minMaxLoc(temp_res)[max_index]
-			if max_val >= self.threshold: # match...
-				self.made_mistake = True
-				return
+		# # first see if our macro messed up
+		# # (a bit ugly having two nearly identical loops...)
+		# for (fn, mistake_template) in self.mistake_templates.items():
+		# 	if self.is_matching_template(mistake_template):
+		# 		self.made_mistake = True
+		# 		return
 		for (fn, template) in self.templates[key_str].items():
-			temp_res = cv2.matchTemplate(self.view, template, cv2.TM_CCOEFF_NORMED)
-			max_val = cv2.minMaxLoc(temp_res)[max_index]
-			if temp_res >= self.threshold: # match!
+			if self.is_matching_template(template):
 				index = index_finder.findall(fn)[0] # get index from filename
 				self.seen_areas[key_str] = index
 				return
@@ -155,9 +192,9 @@ class LevelLogger(bv.BotView):
 		while True:
 			try:
 				while True:
-					self.run_macro('advance_rng_seed')
-					self.run_macro('enter_briefing')
-					self.run_macro('enter_mission')
+					self.run_macro('advance_rng_seed', verify = False)
+					self.run_macro('enter_briefing', verify = False)
+					self.run_macro('enter_mission', verify = True)
 
 					# explore each area and evaluate area before exploring next
 					for x in [5,4,2,3]: # order dependent on how macros were recorded
@@ -165,12 +202,13 @@ class LevelLogger(bv.BotView):
 						if key_str not in self.valid_keyset:
 							raise ValueError("Invalid key_str made! key_str = {0}, \
 								self.valid_keyset = {1}".format(key_str, self.valid_keyset))
-						self.run_macro('explore_{0}'.format(key_str))
-						self.update_view()
-						self.evaluate_screen(key_str)
+						self.run_macro('explore_{0}'.format(key_str), verify = True)
 						if self.made_mistake:
 							print("Whoops! Macro didn't execute properly. Retrying from start...")
 							break
+						self.update_view()
+						self.evaluate_screen(key_str)
+
 					# out of exploration loop
 					if not self.made_mistake:
 						self.log_to_csv() # log to file if there wasn't a mistake
