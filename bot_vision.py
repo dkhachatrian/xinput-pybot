@@ -165,6 +165,7 @@ class BotView:
         sys.stdout.flush() # make sure it prints before the macro starts running
         macro_handler.run_macro(self.controller, self.macros[macro_label])
         print("Done!")
+        sys.stdout.flush()
 
 
     

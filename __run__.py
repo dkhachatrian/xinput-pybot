@@ -20,5 +20,10 @@ if __name__ == '__main__':
 		bot = lb.LevelLogger(window = lb.window_class_title, macros = lb.macros_dd)
 		bot.run()
 
+	elif '--finder' in argv:
+		import seed_finder as sf
+		bot = sf.SeedFinder(window = sf.window_class_title, macros = sf.macros_dd)
+		bot.run()
+
 	else:
 		print("No valid arguments!")

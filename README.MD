@@ -2,7 +2,7 @@
 A bot that can perform simple visual pattern matching and play back gamepad macros, split into:
 - `bot_vision`, which implements a `BotView` class, containing some potentially useful functions for more complicated bots.
 - `macro_handler`, which contains functionality to record macros from an XInput gamepad, convert them to VJoy-readable states, and play these converted macros back on a VJoy device.
-- two instances of bot classes inheriting from the `BotView` class, named `evaluator_bot` (which implements `EvaluatorBot`) and `level_logger` (which implements `LevelLogger`).
+- three instances of bot classes inheriting from the `BotView` class, named `evaluator_bot` (which implements `EvaluatorBot`), `level_logger` (which implements `LevelLogger`), and `seed_finder` (which implements `SeedFinder`).
 
 And a trivial run script.
 
