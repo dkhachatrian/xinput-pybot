@@ -1,0 +1,26 @@
+[vJoy Device(...)]
+SelectedDPad=-1
+A=Button13,0,100
+B=Button14,0,100
+X=Button15,0,100
+Y=Button16,0,100
+L1=Button9,0,100
+R1=Button10,0,100
+L3=Button7,0,100
+R3=Button8,0,100
+Start=Button5,0,100
+Back=Button6,0,100
+Home=Button1,0,0
+LX=Axis1,0,100
+LY=Axis2,100,0
+RX=Axis4,0,100
+RY=Axis5,0,100
+L2=Axis3,0,100
+R2=Axis6,0,100
+UP=Button1,0,100
+DOWN=Button2,0,100
+LEFT=Button3,0,100
+RIGHT=Button4,0,100
+[General]
+Language=English
+CloseToTray=false

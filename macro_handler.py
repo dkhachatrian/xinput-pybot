@@ -133,6 +133,31 @@ TRIGGER_SCALE_FACTOR = 0x7fff / 0xff
 ## FUNCTIONS
 #########
 
+def test_controller_slot(slot_no=1):
+    """Test if controller in slot_no is being read properly.
+    
+    Prints out controller input every 0.2 seconds 20 times.
+    Press buttons during those 4 seconds.
+
+    If the values of the printed output don't change to reflect
+    the button presses, try a different value for slot_no.
+    Otherwise, type anything when prompted and it will return
+    a handle to the gamepad reader.
+    """
+    reader = pyxinput.rController(slot_no)
+    for _ in range(20):
+        print(reader.gamepad)
+        time.sleep(0.2)
+    
+    did_it_work = input("Did it work? If so, type anything then press Enter:\n")
+
+    if did_it_work:
+        return reader
+    else:
+        return None
+
+
+
 
 
 def convert_to_vjoy_axis_range(label, value):
@@ -168,6 +193,7 @@ def xinput_macro_to_vjoy_macro(macro, button_converter = convert_to_vjoy_buttons
     vjoy_struct = None
     
     for state in macro:
+        state = state.__dict__()
         vjoy_struct = pyvjoy._sdk._JOYSTICK_POSITION_V2()
         unconverted_buttons = state.pop('wButtons')
         unconverted_axes = state # rest of the items are axes
@@ -211,7 +237,7 @@ def record_gamepad_reader(reader, refresh_rate, converter = xinput_macro_to_vjoy
             cur_time = _time()
                 # wait until it's time to update
             try:
-                time.sleep(target_time + cur_time - _time())
+                time.sleep(wait_time + cur_time - _time())
             except ValueError:
                 pass
 
