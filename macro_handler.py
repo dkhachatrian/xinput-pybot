@@ -185,7 +185,7 @@ def convert_to_vjoy_buttons(xinput_num, vjoy_mapping = vjoy_buttons, xinput_mapp
     
     
 def xinput_macro_to_vjoy_macro(macro, button_converter = convert_to_vjoy_buttons, axis_converter = convert_to_vjoy_axis_range):
-    """Convert states in macro (list of dicts with 'buttons' and 'axes' as keys) into (list of vjoy-compatible data structs).
+    """Convert states in macro (list of pyxinput.rController().state's) into (list of vjoy-compatible data structs).
     
     Does conversion based on passed-in mappings. (Some ID->label mappings outside the function are used.)
     """
@@ -193,6 +193,7 @@ def xinput_macro_to_vjoy_macro(macro, button_converter = convert_to_vjoy_buttons
     vjoy_struct = None
     
     for state in macro:
+        state = state.__dict__() # convert pxyinput.rController().gamepad to easier-to-handle form
         vjoy_struct = pyvjoy._sdk._JOYSTICK_POSITION_V2()
         unconverted_buttons = state.pop('wButtons')
         unconverted_axes = state # rest of the items are axes
